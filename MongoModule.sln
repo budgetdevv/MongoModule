@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoModule", "MongoModule\MongoModule.csproj", "{00D72A09-A616-4C9B-A353-ADD9A43E2BC7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{5671671A-25F3-4251-99B7-F60B8AFEF98C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{00D72A09-A616-4C9B-A353-ADD9A43E2BC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00D72A09-A616-4C9B-A353-ADD9A43E2BC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00D72A09-A616-4C9B-A353-ADD9A43E2BC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00D72A09-A616-4C9B-A353-ADD9A43E2BC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5671671A-25F3-4251-99B7-F60B8AFEF98C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5671671A-25F3-4251-99B7-F60B8AFEF98C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5671671A-25F3-4251-99B7-F60B8AFEF98C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5671671A-25F3-4251-99B7-F60B8AFEF98C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
