@@ -16,7 +16,7 @@ namespace MongoModule
             Connections[""] = new MongoClient(); //Local
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static MongoClient CreateOrGetConnection(string ConnectionString)
         {
             ref var Connection = ref CollectionsMarshal
