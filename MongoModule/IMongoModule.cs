@@ -15,7 +15,7 @@ namespace MongoModule
     {
         public static readonly EqualityComparer<KeyT> KeyEC = EqualityComparer<KeyT>.Default;
         
-        private struct MongoDataContainer
+        public struct MongoDataContainer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             public MongoDataContainer(KeyT key, ValueT value)
@@ -179,6 +179,12 @@ namespace MongoModule
             }
             
             Cache.Remove(Key);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static IMongoCollection<MongoDataContainer> UnsafeGetMongoCollection()
+        {
+            return Collection;
         }
     }
 }
