@@ -5,24 +5,30 @@ using MongoModule;
 
 namespace Tests
 {
-    public struct TestSerializationPhase: IMongoSerializationPhase<Foo>
+    public struct TestSerializationPhase: IMongoSerializationPhase<ulong, Foo>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static void Serialize(ref Foo Value, BsonSerializationContext Context, BsonSerializationArgs Args)
         {
             var Writer = Context.Writer;
-            
-            Writer.WriteName("String");
 
-            Writer.WriteString(Value.String);
+            Writer.WriteName("String");
             
+            Writer.WriteString(Value.String ?? "");
+
             Writer.WriteName("Int");
             
             Writer.WriteInt32(Value.Int);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static void Deserialize(ref Foo Value, BsonDeserializationContext Context, BsonDeserializationArgs Args)
+        public static void Deserialize_GetKey(ref ulong Value, BsonDeserializationContext Context, BsonDeserializationArgs Args)
+        {
+            Value = unchecked((ulong) Context.Reader.ReadInt64());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static void Deserialize_GetValue(ref Foo Value, BsonDeserializationContext Context, BsonDeserializationArgs Args)
         {
             var Reader = Context.Reader;
 
@@ -42,8 +48,8 @@ namespace Tests
             Int = i;
         }
     }
-    
-    public class TestModule: IMongoModule<TestModule, ulong, Foo, TestSerializationPhase>
+
+    public struct TestConfig: IMongoCollectionConfig
     {
         public static string GetConnectionString()
         {
@@ -69,15 +75,19 @@ namespace Tests
         {
             throw new Exception("This shouldn't run!");
         }
+    }
+    
+    public class TestModule: IMongoModule<ulong, Foo, TestSerializationPhase, TestConfig>
+    {
 
-        // public ref Foo Add(ulong Key)
-        // {
-        //     return ref IMongoModule<TestModule, ulong, Foo, TestSerializationPhase>.GetOrCreateItemRef(Key);
-        // }
-        //
-        // public void UpdateItem(ulong Key, ref Foo Foo)
-        // {
-        //     IMongoModule<TestModule, ulong, Foo, TestSerializationPhase>.UpdateItem(Key, ref Foo);
-        // }
+        public ref Foo Add(ulong Key)
+        {
+            return ref IMongoModule<ulong, Foo, TestSerializationPhase, TestConfig>.GetOrCreateItemRef(Key);
+        }
+        
+        public void UpdateItem(ulong Key, ref Foo Foo)
+        {
+            IMongoModule<ulong, Foo, TestSerializationPhase, TestConfig>.UpdateItem(Key, ref Foo);
+        }
     }
 }
