@@ -7,7 +7,6 @@ namespace Tests
 {
     public struct TestSerializationPhase: IMongoSerializationPhase<ulong, Foo>
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static void Serialize(ref Foo Value, BsonSerializationContext Context, BsonSerializationArgs Args)
         {
             var Writer = Context.Writer;
@@ -21,13 +20,11 @@ namespace Tests
             Writer.WriteInt32(Value.Int);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static void Deserialize_GetKey(ref ulong Value, BsonDeserializationContext Context, BsonDeserializationArgs Args)
         {
             Value = unchecked((ulong) Context.Reader.ReadInt64());
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static void Deserialize_GetValue(ref Foo Value, BsonDeserializationContext Context, BsonDeserializationArgs Args)
         {
             var Reader = Context.Reader;
