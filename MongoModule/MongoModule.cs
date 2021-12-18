@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MongoDB.Bson.Serialization;
@@ -8,13 +9,11 @@ using MongoDB.Driver;
 
 namespace MongoModule
 {
-    public interface IMongoModule<KeyT, ValueT, SerializationPhaseT, CollectionConfigT>
+    public static class MongoModule<KeyT, ValueT, SerializationPhaseT, CollectionConfigT>
         where KeyT: unmanaged
         where SerializationPhaseT: IMongoSerializationPhase<KeyT, ValueT>
         where CollectionConfigT: IMongoCollectionConfig
     {
-        public static readonly EqualityComparer<KeyT> KeyEC = EqualityComparer<KeyT>.Default;
-        
         public struct MongoDataContainer
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -28,12 +27,6 @@ namespace MongoModule
             public KeyT Key;
         
             public ValueT Value;
-        
-            // [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            // public bool KeyIs(KeyT InputKey)
-            // {
-            //     return KeyEC.Equals(Key, InputKey);
-            // }
         }
         
         private sealed class Serializer: SerializerBase<MongoDataContainer>
@@ -43,10 +36,6 @@ namespace MongoModule
                 var Writer = Context.Writer;
                 
                 Writer.WriteStartDocument();
-                
-                //Writer.WriteName("_id");
-
-                //Writer.WriteObjectId(new ObjectId(Container.Key.ToBson()));
 
                 SerializationPhaseT.Serialize(ref Container.Value, Context, Args);
                 
@@ -64,14 +53,12 @@ namespace MongoModule
                 Unsafe.SkipInit(out ValueT Value);
                 
                 SerializationPhaseT.Deserialize_GetKey(ref Key, Context, Args);
-                
+
                 SerializationPhaseT.Deserialize_GetValue(ref Value, Context, Args);
                 
                 Reader.ReadEndDocument();
                 
                 return new MongoDataContainer(Key, Value);
-                
-                // ref var Slot = ref CollectionsMarshal.GetValueRefOrAddDefault(Cache, Unsafe.As<ObjectId, KeyT>(ref ID), out _);
             }
         }
         
@@ -82,7 +69,7 @@ namespace MongoModule
         
         private static readonly Dictionary<KeyT, ValueT> Cache;
 
-        static IMongoModule()
+        static MongoModule()
         {
             BsonSerializer.RegisterSerializer(typeof(MongoDataContainer), new Serializer());
 
@@ -108,8 +95,24 @@ namespace MongoModule
             }
         }
 
+        private struct NoInitializer: IMongoDataInitializer<ValueT>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            public static void Initialize(ref ValueT Value)
+            {
+                //JIT should optimize this away
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static ref ValueT GetOrCreateItemRef(KeyT Key)
+        {
+            return ref GetOrCreateItemRef<NoInitializer>(Key);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static ref ValueT GetOrCreateItemRef<InitializerT>(KeyT Key)
+            where InitializerT: IMongoDataInitializer<ValueT>
         {
             ref var Slot = ref MemoryMarshal.GetReference(
                 MemoryMarshal.CreateSpan(ref CollectionsMarshal.GetValueRefOrAddDefault(Cache, Key, out var Exists), 1));
@@ -119,18 +122,25 @@ namespace MongoModule
                 return ref Slot;
             }
         
-            return ref LoadOrCreateItemRef(Key, ref Slot);
+            return ref LoadOrCreateItemRef<InitializerT>(Key, ref Slot);
         }
         
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ref ValueT LoadOrCreateItemRef(KeyT Key, ref ValueT Slot)
+        private static ref ValueT LoadOrCreateItemRef<InitializerT>(KeyT Key, ref ValueT Slot)
+            where InitializerT: IMongoDataInitializer<ValueT>
         {
-            //var Filter = new FilterDefinitionBuilder<MongoDataContainer>().
-        
-            var Item = Collection.Find(new FilterDefinitionBuilder<MongoDataContainer>().Eq("_id", Key)).SingleOrDefault();
+            var Items = Collection.Find(new FilterDefinitionBuilder<MongoDataContainer>().Eq("_id", Key)).ToEnumerable();
+
+            foreach (var Item in Items)
+            {
+                Slot = Item.Value;
+
+                goto End;
+            }
+
+            InitializerT.Initialize(ref Slot);
             
-            Slot = Item.Value;
-            
+            End:
             return ref Slot;
         }
         
@@ -185,6 +195,12 @@ namespace MongoModule
         public static IMongoCollection<MongoDataContainer> UnsafeGetMongoCollection()
         {
             return Collection;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        public static void EnsureInitialized()
+        {
+            //JITter should NOT optimize this method away
         }
     }
 }
